@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>AI Vision Playground</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <script src="https://cdn.jsdelivr.net/npm/ml5@0.12.2/dist/ml5.min.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <main class="wrap">
+        <h1>AI Vision Playground</h1>
+        <p class="sub">Draw or upload an image — compare pretrained and custom-trained models.</p>
+
+        <canvas id="canvas" width="280" height="280"></canvas>
+        <div id="roast-box" class="roast-box">🤖 Waiting for your masterpiece...</div>
+        <div id="combined-image" class="combined-image"></div>
+
+        <div class="buttons">
+            <button id="classify">Classify Drawing</button>
+            <button id="clear">Clear</button>
+            <label class="upload-btn">
+                Upload Photo
+                <input type="file" id="upload" accept="image/*" hidden>
+            </label>
+        </div>
+
+        <section class="results">
+            <div class="model-card">
+                <h2>DoodleNet</h2>
+                <p id="doodle-status">Loading…</p>
+                <ul id="doodle-results"></ul>
+            </div>
+
+            <div class="model-card">
+                <h2>MobileNet</h2>
+                <p id="mobile-status">Loading…</p>
+                <ul id="mobile-results"></ul>
+            </div>
+
+            <div class="model-card">
+                <h2>Trainable Model</h2>
+                <p id="custom-status">No model trained yet.</p>
+                <input type="file" id="train-upload" multiple accept="image/*">
+                <div id="train-controls">
+                    <input id="label-input" placeholder="Label name (e.g., cat)" />
+                    <button id="add-example">Add Example</button>
+                    <button id="train">Train</button>
+                </div>
+                <ul id="custom-results"></ul>
+            </div>
+
+        </section>
+
+        <section class="gallery-container">
+            <div class="gallery-header">
+                <h2>Past Creations</h2>
+                <button id="clear-gallery" class="small-btn">Clear Gallery</button>
+            </div>
+            <div id="gallery-grid" class="gallery-grid">
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
