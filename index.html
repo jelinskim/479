@@ -14,7 +14,12 @@
         <h1>AI Vision Playground</h1>
         <p class="sub">Draw or upload an image — compare pretrained and custom-trained models.</p>
 
-        <canvas id="canvas" width="280" height="280"></canvas>
+        <div id="canvas-container">
+            <canvas id="canvas" width="280" height="280"></canvas>
+            <div id="canvas-loading-overlay">
+                <span>Models loading...</span>
+            </div>
+        </div>
         <div id="roast-box" class="roast-box">🤖 Waiting for your masterpiece...</div>
         <div id="combined-image" class="combined-image"></div>
 
@@ -43,7 +48,11 @@
             <div class="model-card">
                 <h2>Trainable Model</h2>
                 <p id="custom-status">No model trained yet.</p>
-                <input type="file" id="train-upload" multiple accept="image/*">
+                <p class="info-note">💡 Tip: For best results, train on either all drawings OR all photos, not mixed.</p>
+                <label class="custom-upload-btn">
+                    Browse Images
+                    <input type="file" id="train-upload" multiple accept="image/*" hidden>
+                </label>
                 <div id="train-controls">
                     <input id="label-input" placeholder="Label name (e.g., cat)" />
                     <button id="add-example">Add Example</button>
