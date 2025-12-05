@@ -47,6 +47,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let classificationCollector = {}; // Will store results like {doodle: ..., mobile: ...}
     let classificationCounter = 0;     // Will count how many models we're waiting for
 
+    // Function to check if all models are loaded and hide canvas overlay
+    function checkAllModelsLoaded() {
+        if (isDoodleReady && isMobileReady) {
+            const overlay = document.getElementById('canvas-loading-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+            }
+        }
+    }
+
     // 1. Start with the Custom Model's Base
     customStatus.textContent = 'Loading base model...';
     customFeatureExtractor = ml5.featureExtractor('MobileNet', () => {
@@ -62,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
             isDoodleReady = true;
             doodleStatus.textContent = 'Ready!';
             console.log('DoodleNet loaded.');
+            checkAllModelsLoaded();
         });
 
         mobileStatus.textContent = 'Loading...';
@@ -69,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
             isMobileReady = true;
             mobileStatus.textContent = 'Ready!';
             console.log('MobileNet loaded.');
+            checkAllModelsLoaded();
         });
     });
 
@@ -111,10 +123,16 @@ document.addEventListener('DOMContentLoaded', () => {
             uploadField.value = '';
         } else {
             // Fall back to canvas capture
-            customClassifier.addImage(canvas, label);
-            exampleCounts[label] = (exampleCounts[label] || 0) + 1;
-            customStatus.textContent = `Added example for "${label}" (${exampleCounts[label]} total)`;
-            updateLabelCounter();
+            // Important: Preprocess canvas the same way we preprocess uploaded images
+            const canvasImage = new Image();
+            canvasImage.onload = () => {
+                const processed = preprocessForTraining(canvasImage);
+                customClassifier.addImage(processed, label);
+                exampleCounts[label] = (exampleCounts[label] || 0) + 1;
+                customStatus.textContent = `Added example for "${label}" (${exampleCounts[label]} total)`;
+                updateLabelCounter();
+            };
+            canvasImage.src = canvas.toDataURL();
         }
     });
 
@@ -194,26 +212,33 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        customClassifier.classify(canvas, (err, results) => {
-            // This block updates the UI regardless
-            if (err) {
-                console.error(err);
-                customStatus.textContent = 'Error classifying.';
-            } else if (results && results[0]) {
-                customStatus.textContent = `Prediction: ${results[0].label} (${(results[0].confidence * 100).toFixed(1)}%)`;
-                customResults.innerHTML = results
-                    .slice(0, 3)
-                    .map(r => `<li>${r.label} (${(r.confidence * 100).toFixed(1)}%)</li>`)
-                    .join('');
-            } else {
-                customStatus.textContent = 'No result returned.';
-            }
+        // Preprocess the canvas the same way we preprocessed training images
+        const canvasImage = new Image();
+        canvasImage.onload = () => {
+            const processed = preprocessForTraining(canvasImage);
 
-            // If this was triggered by classifyAll, report to the collector
-            if (partOfAllRun) {
-                onClassifyComplete("custom", results); // Report success (or null results)
-            }
-        });
+            customClassifier.classify(processed, (err, results) => {
+                // This block updates the UI regardless
+                if (err) {
+                    console.error(err);
+                    customStatus.textContent = 'Error classifying.';
+                } else if (results && results[0]) {
+                    customStatus.textContent = `Prediction: ${results[0].label} (${(results[0].confidence * 100).toFixed(1)}%)`;
+                    customResults.innerHTML = results
+                        .slice(0, 3)
+                        .map(r => `<li>${r.label} (${(r.confidence * 100).toFixed(1)}%)</li>`)
+                        .join('');
+                } else {
+                    customStatus.textContent = 'No result returned.';
+                }
+
+                // If this was triggered by classifyAll, report to the collector
+                if (partOfAllRun) {
+                    onClassifyComplete("custom", results); // Report success (or null results)
+                }
+            });
+        };
+        canvasImage.src = canvas.toDataURL();
     }
 
     // === Canvas Drawing ===
@@ -472,8 +497,16 @@ function generateCombinedImage(predictions) {
         return;
     }
 
-    // Create a combined prompt
-    const combinedPrompt = `Create a single object that fuses these things into one combined item: ${promptParts.join(', ')}. It must NOT show separate objects — merge the features into one unified hybrid design. Make it weird, mildly cursed, and drawn like a rough pencil sketch with cross-hatching. The result should look like one single merged invention, not multiple items sitting together.`;
+    // Create a detailed prompt that emphasizes showing ALL elements equally
+    let combinedPrompt;
+    if (promptParts.length === 1) {
+        combinedPrompt = `A clear image of a ${promptParts[0]}`;
+    } else if (promptParts.length === 2) {
+        combinedPrompt = `A creative mashup showing both a ${promptParts[0]} AND a ${promptParts[1]}, both elements clearly visible and equally prominent as a single merged cursed item`;
+    } else {
+        // 3 predictions
+        combinedPrompt = `A creative composition featuring a ${promptParts[0]}, a ${promptParts[1]}, and a ${promptParts[2]}, all three elements clearly visible and equally prominent in the image as a single merged cursed item`;
+    }
 
     // Generate a random seed to ensure unique images each time
     const randomSeed = Math.floor(Math.random() * 1000000);
@@ -513,22 +546,25 @@ async function generateAIRoast(predictions) {
     roastBox.style.background = "#11131a";
 
     // Build context for the roast
-    let context = "You are a mean and witty AI art critic with a sharp sense of humor. Roast this drawing based on what different AI models think it is:\n\n";
+    let context = "You are a funny AI that comments on drawings. Look at what these AI models predicted and create a joke or roast involving their guesses:\n\n";
 
     if (predictions.doodle && predictions.doodle.label) {
         const conf = (predictions.doodle.confidence * 100).toFixed(1);
-        context += `DoodleNet thinks it's a "${predictions.doodle.label}" (${conf}% confident)\n`;
+        context += `DoodleNet thinks it's a ${predictions.doodle.label} (${conf}% confident)\n`;
     }
     if (predictions.mobile && predictions.mobile.label) {
         const conf = (predictions.mobile.confidence * 100).toFixed(1);
-        context += `MobileNet thinks it's a "${predictions.mobile.label}" (${conf}% confident)\n`;
+        context += `MobileNet thinks it's a ${predictions.mobile.label} (${conf}% confident)\n`;
     }
     if (predictions.custom && predictions.custom.label) {
         const conf = (predictions.custom.confidence * 100).toFixed(1);
-        context += `Custom Model thinks it's a "${predictions.custom.label}" (${conf}% confident)\n`;
+        context += `Custom Model thinks it's a ${predictions.custom.label} (${conf}% confident)\n`;
     }
 
-    context += "\nWrite one short, sarcastic roast (1-2 sentences max) about the user's drawing. Base the joke on the models' top guesses and their confidence levels. Be witty, creative, and pun-heavy. Insult the drawing like a tired art teacher who's given up, but keep it playful. Do NOT use quotes, do NOT explain the joke, do NOT use quotes or say 'here's a roast'.";
+    context += "\nWrite a mean comment about what the models predicted. Keep it 2-3 sentences";
+    context += "Focus on the ACTUAL predictions above - don't make up different ones. ";
+    context += "also make sure you insult the drawings, the lower the confidence level the meaner you are.";
+    context += "Be naturally funny, not forced. No complex wordplay, but puns, roasting, and being mean and judgemental is required:";
 
     try {
         const response = await fetch("https://text.pollinations.ai/", {
