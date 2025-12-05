@@ -18,16 +18,46 @@ body {
     margin-top: -6px;
 }
 
+/* Canvas loading overlay */
+#canvas-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    margin: 12px auto;
+    width: 90vw;
+    max-width: 280px;
+}
+
 canvas {
     display: block;
-    margin: 12px auto;
     background: #fff;
     border: 2px solid #23283b;
     border-radius: 8px;
     touch-action: none;
-    width: 90vw;
-    max-width: 280px;
+    width: 100%;
     height: auto;
+}
+
+#canvas-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    z-index: 10;
+    pointer-events: none;
+}
+
+#canvas-loading-overlay.hidden {
+    display: none;
 }
 
 .buttons {
@@ -102,6 +132,17 @@ button:hover,
     padding: 4px 0;
 }
 
+.info-note {
+    font-size: 0.85em;
+    color: #9aa4b2;
+    font-style: italic;
+    margin: 8px 0;
+    padding: 8px;
+    background: #1a1c24;
+    border-radius: 6px;
+    border-left: 3px solid #3a63b0;
+}
+
 #train-controls {
     display: flex;
     flex-direction: column;
@@ -127,6 +168,25 @@ button:hover,
 }
 
 #train-controls button:hover {
+    background: #3a4468;
+}
+
+.custom-upload-btn {
+    display: inline-block;
+    padding: 6px 12px;
+    margin-bottom: 8px;
+    border: none;
+    border-radius: 8px;
+    background: #2e3450;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9em;
+    text-align: center;
+    transition: background 0.2s ease;
+}
+
+.custom-upload-btn:hover {
     background: #3a4468;
 }
 
